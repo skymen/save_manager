@@ -21,7 +21,7 @@
             "items": {
               "auto": "Auto",
               "localstorage": "Local storage",
-              "nodejs": "Node.js (NW.js)",
+              "nodejs": "NW.js",
               "webview": "Webview (File System plugin)",
               "pipelab": "Pipelab",
               "custom": "Custom"
@@ -112,7 +112,7 @@
                 "desc": "The backend to test against",
                 "items": {
                   "localstorage": "Local storage",
-                  "nodejs": "Node.js (NW.js)",
+                  "nodejs": "NW.js",
                   "webview": "Webview (File System plugin)",
                   "pipelab": "Pipelab",
                   "custom": "Custom"
