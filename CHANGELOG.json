@@ -8,5 +8,10 @@
     "added": "Initial working version",
     "changed": "",
     "fixed": ""
+  },
+  "1.1.0.0": {
+    "added": "- Registry callback before deciding which backend to use so I can init Pipelab before trying to load the save file",
+    "changed": "- Paths are matched cross platform, cross export options.",
+    "fixed": ""
   }
 }

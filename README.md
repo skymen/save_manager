@@ -1,14 +1,15 @@
 <img src="./src/icon.svg" width="100" /><br>
 # Save Manager
 <i>A plugin to manage JSON based save files</i> <br>
-### Version 1.0.0.0
+### Version 1.1.0.0
 
-[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/skymen/save_manager/releases/download/skymen_save_manager-1.0.0.0.c3addon/skymen_save_manager-1.0.0.0.c3addon)
+[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/skymen/save_manager/releases/download/skymen_save_manager-1.1.0.0.c3addon/skymen_save_manager-1.1.0.0.c3addon)
 <br>
 <sub> [See all releases](https://github.com/skymen/save_manager/releases) </sub> <br>
 
-#### What's New in 1.0.0.0
-- **Added:** Initial working version
+#### What's New in 1.1.0.0
+- **Added:** - Registry callback before deciding which backend to use so I can init Pipelab before trying to load the save file
+- **Changed:** - Paths are matched cross platform, cross export options.
 
 <sub>[View full changelog](#changelog)</sub>
 
@@ -93,6 +94,10 @@ npm run dev
 
 ---
 ## Changelog
+
+**1.1.0.0**
+- **Added:** - Registry callback before deciding which backend to use so I can init Pipelab before trying to load the save file
+- **Changed:** - Paths are matched cross platform, cross export options.
 
 **1.0.0.0**
 - **Added:** Initial working version
