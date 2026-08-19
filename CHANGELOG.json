@@ -13,5 +13,10 @@
     "added": "- Registry callback before deciding which backend to use so I can init Pipelab before trying to load the save file",
     "changed": "- Paths are matched cross platform, cross export options.",
     "fixed": ""
+  },
+  "1.1.0.1": {
+    "added": "",
+    "changed": "",
+    "fixed": "cover png not appearing"
   }
 }
