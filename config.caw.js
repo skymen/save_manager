@@ -10,7 +10,8 @@ export const type = PLUGIN_TYPE.OBJECT;
 export const id = "skymen_save_manager";
 export const name = "Save Manager";
 export const version = _version;
-export const minConstructVersion = undefined;
+// projectfile properties require r426+
+export const minConstructVersion = "r426";
 export const author = "skymen";
 export const website = "https://www.construct.net";
 export const documentation = "https://www.construct.net";
@@ -38,7 +39,9 @@ export const files = {
 };
 
 // categories that are not filled will use the folder name
-export const aceCategories = {};
+export const aceCategories = {
+  save: "Save Manager",
+};
 
 export const info = {
   // icon: "icon.svg",
@@ -65,7 +68,9 @@ export const info = {
     MustPreDraw: false,
 
     // PLUGIN object only
-    IsSingleGlobal: true,
+    // Must stay false: the plugin is added once per managed JSON object, and the
+    // object type name is what makes each save file unique.
+    IsSingleGlobal: false,
   },
   // PLUGIN only
   AddCommonACEs: {
@@ -78,46 +83,93 @@ export const info = {
   },
 };
 
+// NOTE: property order is load bearing. _getInitProperties() returns values
+// positionally, so new properties must be appended, never inserted. Do not add
+// group/link/info properties: whether they occupy a runtime slot is inconsistent.
 export const properties = [
-  /*
   {
-    type: PROPERTY_TYPE.INTEGER,
-    id: "property_id",
+    type: PROPERTY_TYPE.CHECK,
+    id: "autoLoad",
     options: {
-      initialValue: 0,
-      interpolatable: false,
-
-      // minValue: 0, // omit to disable
-      // maxValue: 100, // omit to disable
-
-      // for type combo only
-      // items: [
-      //   {itemId1: "item name1" },
-      //   {itemId2: "item name2" },
-      // ],
-
-      // dragSpeedMultiplier: 1, // omit to disable
-
-      // for type object only
-      // allowedPluginIds: ["Sprite", "<world>"],
-
-      // for type link only
-      // linkCallback: function(instOrObj) {},
-      // linkText: "Link Text",
-      // callbackType:
-      //   "for-each-instance"
-      //   "once-for-type"
-
-      // for type info only
-      // infoCallback: function(inst) {},
-
-      // for type projectfile only (plugins only, Addon SDK v2, r426+)
-      // A dropdown list from which any project file in the project can be chosen.
-      // The property value at runtime is a relative path to fetch the project file from.
-      // filter: ".txt", // optional: filter list by file extension (e.g., ".txt" to only list .txt files)
+      initialValue: true,
     },
-    name: "Property Name",
-    desc: "Property Description",
-  }
-  */
+    name: "Auto load",
+    desc: "Load the save before the project starts, so the data is ready when the first layout begins",
+  },
+  {
+    type: PROPERTY_TYPE.COMBO,
+    id: "method",
+    options: {
+      initialValue: "auto",
+      items: [
+        { auto: "Auto" },
+        { localstorage: "Local storage" },
+        { nodejs: "NW.js" },
+        { webview: "Webview (File System plugin)" },
+        { pipelab: "Pipelab" },
+        { custom: "Custom" },
+      ],
+    },
+    name: "Method",
+    desc: "Where the save is stored. Auto picks the best available backend at runtime",
+  },
+  {
+    type: PROPERTY_TYPE.OBJECT,
+    id: "jsonObject",
+    options: {
+      allowedPluginIds: ["Json"],
+    },
+    name: "JSON object",
+    desc: "The JSON object this plugin loads into and saves from",
+  },
+  {
+    type: PROPERTY_TYPE.PROJECTFILE,
+    id: "defaultData",
+    options: {
+      filter: ".json",
+    },
+    name: "Default data",
+    desc: "Optional project file holding the default save data. Loaded first, then the stored save is merged on top",
+  },
+  {
+    type: PROPERTY_TYPE.TEXT,
+    id: "extension",
+    options: {
+      initialValue: "sav",
+    },
+    name: "Extension",
+    desc: "File extension for the save. The file is named after this object type, e.g. PlayerSave.sav",
+  },
+  {
+    type: PROPERTY_TYPE.COMBO,
+    id: "folder",
+    options: {
+      initialValue: "appdata",
+      items: [
+        { appdata: "App data" },
+        { home: "Home" },
+        { appfolder: "App folder" },
+      ],
+    },
+    name: "Folder",
+    desc: "Which common folder file based backends write to. Ignored by local storage and custom",
+  },
+  {
+    type: PROPERTY_TYPE.TEXT,
+    id: "subfolder",
+    options: {
+      initialValue: "",
+    },
+    name: "Subfolder",
+    desc: "Subfolder inside the chosen folder. Leave blank to use the project name",
+  },
+  {
+    type: PROPERTY_TYPE.TEXT,
+    id: "customHandlerId",
+    options: {
+      initialValue: "",
+    },
+    name: "Custom handler ID",
+    desc: "Name the handler was registered under via globalThis.SaveManager.register(). Only used when Method is Custom",
+  },
 ];

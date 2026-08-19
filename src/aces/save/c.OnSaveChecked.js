@@ -2,9 +2,9 @@ export const config = {
   highlight: false,
   isDeprecated: false,
   isTrigger: true,
-  listName: "Sample Trigger",
-  displayText: "Sample Trigger",
-  description: "This is a sample trigger",
+  listName: "On save checked",
+  displayText: "On save checked",
+  description: "Triggered after Check if save exists finishes",
   params: [],
 };
 

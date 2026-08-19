@@ -1,117 +1,181 @@
 {
   "languageTag": "en-US",
-  "fileDescription": "Strings for sample_addon.",
+  "fileDescription": "Strings for skymen_save_manager.",
   "text": {
     "plugins": {
-      "sample_addon": {
-        "name": "Sample Addon",
-        "description": "Description",
+      "skymen_save_manager": {
+        "name": "Save Manager",
+        "description": "A plugin to manage JSON based save files",
         "help-url": "https://www.construct.net",
         "aceCategories": {
-          "Ace_Folders_In_Category_Folder": "Ace_Folders_In_Category_Folder",
-          "Aces_Files_In_Category_Folder": "Aces_Files_In_Category_Folder",
-          "Aces_In_Single_File": "Aces_In_Single_File"
+          "save": "Save Manager"
         },
-        "properties": {},
+        "properties": {
+          "autoLoad": {
+            "name": "Auto load",
+            "desc": "Load the save before the project starts, so the data is ready when the first layout begins"
+          },
+          "method": {
+            "name": "Method",
+            "desc": "Where the save is stored. Auto picks the best available backend at runtime",
+            "items": {
+              "auto": "Auto",
+              "localstorage": "Local storage",
+              "nodejs": "Node.js (NW.js)",
+              "webview": "Webview (File System plugin)",
+              "pipelab": "Pipelab",
+              "custom": "Custom"
+            }
+          },
+          "jsonObject": {
+            "name": "JSON object",
+            "desc": "The JSON object this plugin loads into and saves from"
+          },
+          "defaultData": {
+            "name": "Default data",
+            "desc": "Optional project file holding the default save data. Loaded first, then the stored save is merged on top"
+          },
+          "extension": {
+            "name": "Extension",
+            "desc": "File extension for the save. The file is named after this object type, e.g. PlayerSave.sav"
+          },
+          "folder": {
+            "name": "Folder",
+            "desc": "Which common folder file based backends write to. Ignored by local storage and custom",
+            "items": {
+              "appdata": "App data",
+              "home": "Home",
+              "appfolder": "App folder"
+            }
+          },
+          "subfolder": {
+            "name": "Subfolder",
+            "desc": "Subfolder inside the chosen folder. Leave blank to use the project name"
+          },
+          "customHandlerId": {
+            "name": "Custom handler ID",
+            "desc": "Name the handler was registered under via globalThis.SaveManager.register(). Only used when Method is Custom"
+          }
+        },
         "actions": {
-          "ActionCombo": {
-            "list-name": "Sample Action Combo",
-            "display-text": "Sample Action Combo {0}",
-            "description": "This is a sample action",
-            "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param",
-                "items": {
-                  "test": "test",
-                  "test2": "test2"
-                }
-              }
-            }
-          },
-          "Action": {
-            "list-name": "Sample Action",
-            "display-text": "Sample Action {0}",
-            "description": "This is a sample action",
-            "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param"
-              }
-            }
-          },
-          "AsyncAction": {
-            "list-name": "Sample Action Async",
-            "display-text": "Sample Action Async",
-            "description": "This is a sample action",
+          "CheckSaveExists": {
+            "list-name": "Check if save exists",
+            "display-text": "Check if save data exists",
+            "description": "Ask the backend whether a save exists, then read the result with the Has save data condition",
             "params": {}
           },
-          "SampleAction": {
-            "list-name": "Sample Action",
-            "display-text": "Sample Action {0}",
-            "description": "This is a sample action",
-            "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param"
-              }
-            }
+          "DeleteSave": {
+            "list-name": "Delete save",
+            "display-text": "Delete save data",
+            "description": "Remove the stored save from the selected backend. The JSON object is left as is",
+            "params": {}
+          },
+          "Load": {
+            "list-name": "Load",
+            "display-text": "Load save data",
+            "description": "Load the default data, then merge the stored save on top of it, into the JSON object",
+            "params": {}
+          },
+          "NewSave": {
+            "list-name": "New save",
+            "display-text": "Start a new save",
+            "description": "Load only the default data into the JSON object. Nothing is written until you use Save",
+            "params": {}
+          },
+          "Save": {
+            "list-name": "Save",
+            "display-text": "Save data",
+            "description": "Write the JSON object's current contents to the selected backend",
+            "params": {}
           }
         },
         "conditions": {
-          "ConditionCombo": {
-            "list-name": "Sample Condition",
-            "display-text": "Sample Condition {0}",
-            "description": "This is a sample condition",
+          "HasSaveData": {
+            "list-name": "Has save data",
+            "display-text": "Has save data",
+            "description": "True if the last load or check found an existing save. Conditions cannot do IO, so use Check if save exists first to refresh this",
+            "params": {}
+          },
+          "IsLoaded": {
+            "list-name": "Is loaded",
+            "display-text": "Is loaded",
+            "description": "True once data has been loaded into the JSON object at least once",
+            "params": {}
+          },
+          "IsUsingBackend": {
+            "list-name": "Is using backend",
+            "display-text": "Is using {0} backend",
+            "description": "Check which backend was actually resolved, which is useful when Method is Auto",
             "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param",
+              "backend": {
+                "name": "Backend",
+                "desc": "The backend to test against",
                 "items": {
-                  "TRUE": "True",
-                  "FALSE": "False"
+                  "localstorage": "Local storage",
+                  "nodejs": "Node.js (NW.js)",
+                  "webview": "Webview (File System plugin)",
+                  "pipelab": "Pipelab",
+                  "custom": "Custom"
                 }
               }
             }
           },
-          "Condition": {
-            "list-name": "Sample Condition",
-            "display-text": "Sample Condition {0}",
-            "description": "This is a sample condition",
-            "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param"
-              }
-            }
-          },
-          "Trigger": {
-            "list-name": "Sample Trigger",
-            "display-text": "Sample Trigger",
-            "description": "This is a sample trigger",
+          "OnDeleted": {
+            "list-name": "On deleted",
+            "display-text": "On deleted",
+            "description": "Triggered after the stored save has been deleted",
             "params": {}
           },
-          "SampleCondition": {
-            "list-name": "Sample Condition",
-            "display-text": "Sample Condition",
-            "description": "This is a sample condition",
+          "OnError": {
+            "list-name": "On error",
+            "display-text": "On error",
+            "description": "Triggered when a load, save, delete or check fails. Read LastError for details",
+            "params": {}
+          },
+          "OnLoaded": {
+            "list-name": "On loaded",
+            "display-text": "On loaded",
+            "description": "Triggered after save data has been loaded and merged into the JSON object",
+            "params": {}
+          },
+          "OnNewSave": {
+            "list-name": "On new save",
+            "display-text": "On new save",
+            "description": "Triggered after a new save has been started from the default data",
+            "params": {}
+          },
+          "OnSaveChecked": {
+            "list-name": "On save checked",
+            "display-text": "On save checked",
+            "description": "Triggered after Check if save exists finishes",
+            "params": {}
+          },
+          "OnSaved": {
+            "list-name": "On saved",
+            "display-text": "On saved",
+            "description": "Triggered after save data has been written successfully",
             "params": {}
           }
         },
         "expressions": {
-          "Expression2": {
-            "translated-name": "Expression2",
-            "description": "Sample Expression",
+          "Backend": {
+            "translated-name": "Backend",
+            "description": "The backend actually in use: localstorage, nodejs, webview, pipelab or custom. Empty until the first operation resolves one",
             "params": {}
           },
-          "Expression": {
-            "translated-name": "Expression",
-            "description": "Sample Expression",
+          "LastError": {
+            "translated-name": "LastError",
+            "description": "The message from the most recent failure, or an empty string if the last operation succeeded",
             "params": {}
           },
-          "SampleExpression": {
-            "translated-name": "SampleExpression",
-            "description": "This is a sample expression",
+          "SaveName": {
+            "translated-name": "SaveName",
+            "description": "The resolved save file name, which is this object type's name plus the extension. Also the local storage key",
+            "params": {}
+          },
+          "SavePath": {
+            "translated-name": "SavePath",
+            "description": "The path the save is written to for file based backends. Empty for local storage and custom backends",
             "params": {}
           }
         }
