@@ -23,5 +23,10 @@
     "added": "",
     "changed": "Changed priority order for Auto Backend",
     "fixed": ""
+  },
+  "1.2.0.0": {
+    "added": "",
+    "changed": "Moved some code aroud",
+    "fixed": ""
   }
 }

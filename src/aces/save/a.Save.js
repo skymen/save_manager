@@ -11,5 +11,8 @@ export const config = {
 export const expose = true;
 
 export default function () {
-  return this._doSave();
+  return this._run("OnSaved", async (ctx, backend) => {
+    await backend.write(ctx, JSON.stringify(this._readJson()));
+    this._saveExisted = true;
+  });
 }

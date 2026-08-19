@@ -18,6 +18,11 @@ export default function (parentClass) {
       this._saveExisted = false;
       this._lastError = "";
       this._onBeforeProjectStart = null;
+      // Project files cannot change at runtime, so the default data is fetched
+      // exactly once at startup and cached. That is what lets New save be sync.
+      this._defaults = null;
+      this._defaultsReady = false;
+      this._defaultsError = "";
 
       const properties = this._getInitProperties();
       if (properties) {
@@ -44,11 +49,17 @@ export default function (parentClass) {
       // after Construct has already awaited its load promises, so addLoadPromise is
       // not an option for us. beforeprojectstart is the next hook and blocks just as
       // hard: Construct collects each listener's returned promise and awaits them all
-      // before the first layout starts, so the data is ready before any event runs.
-      if (this._autoLoad) {
-        this._onBeforeProjectStart = () => this._doLoad();
-        this.runtime.addEventListener("beforeprojectstart", this._onBeforeProjectStart);
-      }
+      // before the first layout starts.
+      //
+      // Registered unconditionally, not just for auto load, so the default data is
+      // always cached before any event sheet runs.
+      this._onBeforeProjectStart = () => this._onProjectStart();
+      this.runtime.addEventListener("beforeprojectstart", this._onBeforeProjectStart);
+    }
+
+    async _onProjectStart() {
+      await this._loadDefaults();
+      if (this._autoLoad) await this._doLoad();
     }
 
     // ---------------------------------------------------------------- naming
@@ -128,26 +139,59 @@ export default function (parentClass) {
       return inst.getJsonDataCopy();
     }
 
-    // Deliberately not cached. Construct's asset manager already caches local
-    // project files, and holding our own copy would make a second load in the
-    // same session silently reuse stale defaults.
-    async _fetchDefaults() {
-      if (!this._defaultDataPath) return {};
+    // Fetched once at startup. Project files are immutable at runtime, so there is
+    // nothing to invalidate and every later read is synchronous.
+    async _loadDefaults() {
+      if (this._defaultsReady) return;
+      if (!this._defaultDataPath) {
+        this._defaults = {};
+        this._defaultsReady = true;
+        return;
+      }
       try {
-        return await this.runtime.assets.fetchJson(this._defaultDataPath);
+        const data = await this.runtime.assets.fetchJson(this._defaultDataPath);
+        this._defaults = data === null || data === undefined ? {} : data;
       } catch (e) {
+        this._defaults = {};
+        this._defaultsError = `Could not read default data "${this._defaultDataPath}": ${e.message || e}`;
+      }
+      this._defaultsReady = true;
+    }
+
+    // Synchronous. Hands back a copy so callers can never mutate the cache.
+    _getDefaults() {
+      if (!this._defaultsReady)
         throw new Error(
-          `Could not read default data "${this._defaultDataPath}": ${e.message || e}`
+          "Default data is not loaded yet. It is fetched during startup, so this can only " +
+            "happen if the action ran before beforeprojectstart."
         );
+      if (this._defaultsError) throw new Error(this._defaultsError);
+      return JSON.parse(JSON.stringify(this._defaults));
+    }
+
+    _defaultsOrEmpty() {
+      try {
+        return this._getDefaults();
+      } catch (e) {
+        return {};
       }
     }
 
-    async _defaultsOrEmpty() {
+    // Shared skeleton for the backend-backed actions, so the resolve/try/catch/
+    // trigger boilerplate lives in one place rather than in every ACE file.
+    async _run(triggerName, fn) {
       try {
-        const data = await this._fetchDefaults();
-        return data === null || data === undefined ? {} : data;
+        await registry.whenReady(this.runtime);
+
+        const ctx = this._buildContext("");
+        const backend = this._resolveBackend(ctx);
+        this._backend = backend.id;
+
+        await fn.call(this, ctx, backend);
+        this._lastError = "";
+        this._trigger(triggerName);
       } catch (e) {
-        return {};
+        this._fail(e);
       }
     }
 
@@ -165,7 +209,7 @@ export default function (parentClass) {
         const backend = this._resolveBackend(ctx);
         this._backend = backend.id;
 
-        const defaults = await this._fetchDefaults();
+        const defaults = this._getDefaults();
         const raw = await backend.read(ctx);
 
         // null means no save. An empty string is a real, empty file and must not
@@ -189,7 +233,7 @@ export default function (parentClass) {
         this._trigger("OnLoaded");
       } catch (e) {
         try {
-          this._applyToJson(await this._defaultsOrEmpty());
+          this._applyToJson(this._defaultsOrEmpty());
           this._isLoaded = true;
         } catch (e2) {
           // Nothing to load into; the original error is the useful one.
@@ -198,67 +242,9 @@ export default function (parentClass) {
       }
     }
 
-    async _doSave(slot = "") {
-      try {
-        await registry.whenReady(this.runtime);
 
-        const ctx = this._buildContext(slot);
-        const backend = this._resolveBackend(ctx);
-        this._backend = backend.id;
 
-        await backend.write(ctx, JSON.stringify(this._readJson()));
-        this._saveExisted = true;
-        this._lastError = "";
-        this._trigger("OnSaved");
-      } catch (e) {
-        this._fail(e);
-      }
-    }
 
-    async _doNewSave() {
-      try {
-        this._applyToJson(await this._fetchDefaults());
-        this._isLoaded = true;
-        this._saveExisted = false;
-        this._lastError = "";
-        this._trigger("OnNewSave");
-      } catch (e) {
-        this._fail(e);
-      }
-    }
-
-    async _doDelete(slot = "") {
-      try {
-        await registry.whenReady(this.runtime);
-
-        const ctx = this._buildContext(slot);
-        const backend = this._resolveBackend(ctx);
-        this._backend = backend.id;
-
-        await backend.remove(ctx);
-        this._saveExisted = false;
-        this._lastError = "";
-        this._trigger("OnDeleted");
-      } catch (e) {
-        this._fail(e);
-      }
-    }
-
-    async _doCheckExists(slot = "") {
-      try {
-        await registry.whenReady(this.runtime);
-
-        const ctx = this._buildContext(slot);
-        const backend = this._resolveBackend(ctx);
-        this._backend = backend.id;
-
-        this._saveExisted = await backend.exists(ctx);
-        this._lastError = "";
-        this._trigger("OnSaveChecked");
-      } catch (e) {
-        this._fail(e);
-      }
-    }
 
     _fail(error) {
       this._lastError = error && error.message ? error.message : String(error);

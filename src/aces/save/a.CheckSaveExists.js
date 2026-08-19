@@ -12,5 +12,7 @@ export const config = {
 export const expose = true;
 
 export default function () {
-  return this._doCheckExists();
+  return this._run("OnSaveChecked", async (ctx, backend) => {
+    this._saveExisted = await backend.exists(ctx);
+  });
 }
