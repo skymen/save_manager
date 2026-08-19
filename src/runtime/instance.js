@@ -3,7 +3,7 @@ import AddonTypeMap from "../../template/addonTypeMap.js";
 import { deepMerge, isPlainObject } from "./merge.js";
 import { joinPath, joinFromRoot, sanitizeSegment } from "./paths.js";
 import { BACKENDS, resolveAuto } from "./backends/index.js";
-import "./registry.js";
+import registry from "./registry.js";
 
 const METHODS = ["auto", "localstorage", "nodejs", "webview", "pipelab", "custom"];
 const FOLDERS = ["appdata", "home", "appfolder"];
@@ -159,6 +159,8 @@ export default function (parentClass) {
       // otherwise would let a "no save, start fresh" flow overwrite it.
       this._saveExisted = false;
       try {
+        await registry.whenReady(this.runtime);
+
         const ctx = this._buildContext(slot);
         const backend = this._resolveBackend(ctx);
         this._backend = backend.id;
@@ -198,6 +200,8 @@ export default function (parentClass) {
 
     async _doSave(slot = "") {
       try {
+        await registry.whenReady(this.runtime);
+
         const ctx = this._buildContext(slot);
         const backend = this._resolveBackend(ctx);
         this._backend = backend.id;
@@ -225,6 +229,8 @@ export default function (parentClass) {
 
     async _doDelete(slot = "") {
       try {
+        await registry.whenReady(this.runtime);
+
         const ctx = this._buildContext(slot);
         const backend = this._resolveBackend(ctx);
         this._backend = backend.id;
@@ -240,6 +246,8 @@ export default function (parentClass) {
 
     async _doCheckExists(slot = "") {
       try {
+        await registry.whenReady(this.runtime);
+
         const ctx = this._buildContext(slot);
         const backend = this._resolveBackend(ctx);
         this._backend = backend.id;

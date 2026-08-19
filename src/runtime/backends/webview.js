@@ -3,34 +3,90 @@ import { findObjectClassByPluginId, joinPath } from "../paths.js";
 export const id = "webview";
 
 const PLUGIN_ID = "FileSystem";
+
+// Picker tags are NOT uniform across platforms, so each folder option is a
+// priority list and the first tag the platform actually reports wins.
+//
+// "App data" deliberately resolves to the SHARED app-data root, not to an
+// app-scoped folder, because the Subfolder property is what does the app
+// scoping. Verified on macOS by planting marker files and observing which one
+// the runtime loaded:
+//
+//   <roaming-app-data>   Windows %APPDATA%            (absent on macOS/Linux)
+//   <local-app-data>     macOS ~/Library/Application Support   [verified]
+//                        Linux $XDG_DATA_HOME or ~/.local/share
+//   <current-app-data>   NOT used: it is already app-scoped, so it would nest
+//                        twice, e.g. .../com.my.game/MyGame/Save.sav
+//                        (macOS: ~/Library/Application Support/<bundle-id>) [verified]
+//
+// The chosen roots line up with Electron's app.getPath("appData"), which is what
+// Pipelab reports as _appDataFolder, on Windows and macOS.
 const PICKER_TAGS = {
-  appdata: "<roaming-app-data>",
-  home: "<profile>",
-  appfolder: "<app>",
+  appdata: ["<roaming-app-data>", "<local-app-data>"],
+  home: ["<profile>"],
+  appfolder: ["<app>"],
 };
+
+// The full set Construct knows about, used only to report what IS supported when a
+// lookup fails.
+const ALL_TAGS = [
+  "<app>", "<web-resource>", "<current-app-data>", "<local-app-data>",
+  "<roaming-app-data>", "<desktop>", "<documents>", "<downloads>",
+  "<pictures>", "<profile>", "<saved-games>", "<screenshots>", "<videos>",
+];
 
 // The File System plugin exposes its API on the object type, not an instance.
 export function getType(ctx) {
   return findObjectClassByPluginId(ctx.runtime, PLUGIN_ID);
 }
 
+// hasPickerTag is the platform-accurate check on every platform. On Windows the
+// set is built from the directory handles the wrapper actually hands over; on
+// macOS and Linux it comes from the native extension's own init response.
 function pickerTag(ctx) {
-  return PICKER_TAGS[ctx.folder];
+  const fs = getType(ctx);
+  if (!fs || typeof fs.hasPickerTag !== "function") return null;
+  for (const tag of PICKER_TAGS[ctx.folder] || []) {
+    if (fs.hasPickerTag(tag)) return tag;
+  }
+  return null;
+}
+
+function requireTag(ctx) {
+  const tag = pickerTag(ctx);
+  if (tag === null) throw new Error(unavailableReason(ctx));
+  return tag;
+}
+
+function supportedTags(ctx) {
+  const fs = getType(ctx);
+  if (!fs || typeof fs.hasPickerTag !== "function") return [];
+  return ALL_TAGS.filter((t) => fs.hasPickerTag(t));
 }
 
 // Construct only bundles the native scirra-filesystem extension when the File
-// System plugin is present in the project, so this dependency is unavoidable.
+// System plugin is present in the project, so that dependency is unavoidable.
 export function isAvailable(ctx) {
   const fs = getType(ctx);
   if (!fs || !fs.isSupported) return false;
-  const tag = pickerTag(ctx);
-  return typeof fs.hasPickerTag === "function" ? fs.hasPickerTag(tag) : true;
+  return pickerTag(ctx) !== null;
 }
 
-export function unavailableReason() {
+export function unavailableReason(ctx) {
+  const fs = getType(ctx);
+  if (!fs)
+    return (
+      "No File System object is in the project. Add Construct's File System plugin - the " +
+      "native extension it ships is what provides desktop file access."
+    );
+  if (!fs.isSupported)
+    return "The File System object reports that it is not supported on this platform.";
+
+  const supported = supportedTags(ctx);
   return (
-    "The File System object is missing or unsupported on this platform. Add Construct's " +
-    "File System plugin to the project."
+    `This platform supports none of the folders mapped to "${ctx.folder}" ` +
+    `(${(PICKER_TAGS[ctx.folder] || []).join(", ")}). ` +
+    `Folders it does support: ${supported.length ? supported.join(", ") : "none"}.`
   );
 }
 
@@ -40,7 +96,7 @@ export async function read(ctx) {
   if (!(await exists(ctx))) return null;
   const fs = getType(ctx);
   const data = await fs.readFile({
-    pickerTag: pickerTag(ctx),
+    pickerTag: requireTag(ctx),
     folderPath: ctx.relPath,
     mode: "text",
   });
@@ -49,15 +105,16 @@ export async function read(ctx) {
 
 export async function write(ctx, text) {
   const fs = getType(ctx);
+  const tag = requireTag(ctx);
   if (ctx.subfolder) {
     try {
-      await fs.createFolder(pickerTag(ctx), ctx.subfolder);
+      await fs.createFolder(tag, ctx.subfolder);
     } catch (e) {
       // Already exists is the normal case and is not distinguishable here.
     }
   }
   await fs.writeFile({
-    pickerTag: pickerTag(ctx),
+    pickerTag: tag,
     folderPath: ctx.relPath,
     data: text,
     mode: "overwrite",
@@ -66,18 +123,19 @@ export async function write(ctx, text) {
 
 export async function remove(ctx) {
   const fs = getType(ctx);
+  const tag = requireTag(ctx);
   if (!(await exists(ctx))) return;
-  await fs.delete(pickerTag(ctx), ctx.relPath, false);
+  await fs.delete(tag, ctx.relPath, false);
 }
 
 export async function exists(ctx) {
   const fs = getType(ctx);
+  const tag = pickerTag(ctx);
+  if (tag === null) return false;
   try {
-    const content = await fs.listContent(pickerTag(ctx), ctx.subfolder, false);
+    const content = await fs.listContent(tag, ctx.subfolder, false);
     const files = (content && content.files) || [];
-    return files.some(
-      (f) => joinPath(f) === joinPath(ctx.fileName) || f === ctx.relPath,
-    );
+    return files.some((f) => joinPath(f) === joinPath(ctx.fileName) || f === ctx.relPath);
   } catch (e) {
     // The subfolder does not exist yet, so neither does the save.
     return false;

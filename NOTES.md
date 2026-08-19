@@ -19,22 +19,32 @@ slow backend shows a blank canvas rather than the loading bar.
 **Consequence:** those listeners run *concurrently*, not in sequence. Anything the save load depends
 on must be ready **before** `beforeprojectstart`, not during it.
 
-## Pipelab
+## Pipelab, and the beforeLoad hook
 
 The plugin only ever **checks** `pipelab._isInitialized`. It never initialises Pipelab itself,
-because doing so would race the user's own `beforeprojectstart` handler.
+because that would race the user's own setup code.
 
-Initialise Pipelab from `runOnStartup`, which Construct pushes into its load promises and awaits on
-the loading screen:
+Initialising from your own `beforeprojectstart` handler does **not** work, even when the listener is
+registered in `runOnStartup`. Construct fires all `beforeprojectstart` listeners first and only then
+awaits them together (`_FireAndWait_AsyncOptional` in `lib/events/handler.js`), so your
+`_Initialize()` and the auto load start at the same instant and race.
+
+Register the setup with the plugin instead. It is awaited before any backend is resolved, on every
+load, save, delete and check:
 
 ```js
-runOnStartup(async (runtime) => {
+globalThis.SaveManager.beforeLoad(async (runtime) => {
   await runtime.objects.Pipelab.getFirstInstance()._Initialize();
 });
 ```
 
-Do **not** use `beforeprojectstart` for this (as Under The Red Sky's `scripts/main.js:83` does) — it
-runs alongside the save load, not before it.
+Register it from an imported script or inside `runOnStartup` — anywhere that runs before the loading
+screen ends. Hooks run once, in registration order, and every Save Manager instance shares the same
+single setup pass. A hook that throws is logged and skipped rather than wedging startup; the backend
+check that follows reports the real consequence.
+
+Registering a hook after loading has already begun logs a warning and does nothing, because by then
+it is too late to matter.
 
 ## Custom backend
 
@@ -57,20 +67,71 @@ globalThis.SaveManager.register("cloud", {
 
 ## Backends and folders
 
-| Folder property | Pipelab | Webview (File System) | Node.js (NW.js) |
-|---|---|---|---|
-| App data | `_appDataFolder` | `<roaming-app-data>` | `%APPDATA%` / `~/Library/Application Support` / `$XDG_CONFIG_HOME` |
-| Home | `_homeFolder` | `<profile>` | `os.homedir()` |
-| App folder | `_exeFolder` | `<app>` | `dirname(process.execPath)` |
+Every folder option resolves to the **shared** root on all three backends; the Subfolder property
+(default: project name) is what scopes it to your game. One rule, and the app name never nests twice.
 
-Documents and Saved games are deliberately absent: Pipelab exposes no `savedGames` path at all
-(its `userData` is `appData/<appName>`, which is a different location), and NW.js has no reliable
-Documents API — localized folder names and OneDrive redirection both break the naive
+### App data (default)
+
+| Platform | Webview (File System) | Pipelab (`_appDataFolder`) | Node.js (NW.js) |
+|---|---|---|---|
+| Windows | `<roaming-app-data>` = `%APPDATA%` | `%APPDATA%` | `%APPDATA%` |
+| macOS | `<local-app-data>` = `~/Library/Application Support` | `~/Library/Application Support` | `~/Library/Application Support` |
+| Linux | `<local-app-data>` = `$XDG_DATA_HOME` or `~/.local/share` | `$XDG_CONFIG_HOME` or `~/.config` | `$XDG_CONFIG_HOME` or `~/.config` |
+
+Windows and macOS agree exactly across all three backends. **Linux is the one divergence**:
+Construct's native extension uses the XDG *data* dir, while Electron — and therefore Pipelab — uses
+the XDG *config* dir. That is baked into the two frameworks and cannot be reconciled. It only matters
+if a shipped game switches backends.
+
+`<roaming-app-data>` is kept as the first candidate on purpose. On Windows, Roaming (`%APPDATA%`) is
+the conventional home for user data meant to follow the user between machines, and it is exactly what
+Electron's `app.getPath("appData")` returns — so keeping it makes Webview agree with Pipelab and
+NW.js on Windows. It simply does not exist on macOS or Linux, which is what the fallback is for.
+
+`<current-app-data>` is deliberately **not** used. It is already app-scoped — on macOS it is
+`~/Library/Application Support/<bundle-id>` — so combined with the Subfolder property it produces a
+doubly-nested path like `~/Library/Application Support/com.my.game/MyGame/Save.sav`.
+
+### Home
+
+`<profile>` / `_homeFolder` / `os.homedir()` — the user's home directory, identical everywhere.
+
+### App folder
+
+`<app>` / `_exeFolder` / `dirname(process.execPath)` — the install directory. Fine for portable
+Windows builds, but treat it as read-only on macOS (it lives inside the `.app` bundle, and macOS
+translocates quarantined apps onto a read-only mount) and under `Program Files` on Windows.
+
+Documents and Saved games are excluded: Pipelab exposes no `savedGames` path at all, and NW.js has no
+reliable Documents API — localized folder names and OneDrive redirection both break the naive
 `homedir() + "/Documents"` guess.
 
-**Webview requires Construct's File System plugin in the project.** The native
-`scirra-filesystem.ext.*` binary is only bundled into an export when that plugin is present, so the
-dependency cannot be avoided.
+### How these were established
+
+Construct's manual blocks scripted access, so the macOS and Linux rows come from the binaries and
+from experiment, not from docs:
+
+- The macOS `scirra-filesystem.ext.dylib` exports `GetMacOSKnownFolderPath(NSSearchPathDirectory)`
+  and advertises exactly `<app> <current-app-data> <desktop> <documents> <downloads>
+  <local-app-data> <pictures> <profile> <videos> <web-resource>` — no `<roaming-app-data>`, no
+  `<saved-games>`.
+- `<local-app-data>` and `<current-app-data>` were pinned down on a real WKWebView export by planting
+  marker save files in candidate directories and observing which one the runtime loaded.
+- The Linux `.so` exports `GetXDGDataHomePath()` and `GetXDGPathFromUserDirs()`, and references
+  `XDG_DATA_HOME`, `~/.local/share` and `~/.config/user-dirs.dirs`.
+- Electron's `app.getPath()` documentation covers the Pipelab column.
+
+**The Windows rows are inferred from Electron's documented behaviour and Windows convention — they
+have not been verified on Windows hardware.**
+
+### Two requirements for Webview
+
+**It needs Construct's File System plugin in the project.** The native `scirra-filesystem.ext.*`
+binary is only bundled into an export when that plugin is present, so the dependency is unavoidable.
+
+**It needs a Construct version whose File System plugin ships the `IFileSystemObjectType` scripting
+interface.** On older exports that class is absent entirely, `runtime.objects.FileSystem` is a plain
+object type with no file methods at all, and the backend correctly reports itself unavailable.
 
 Auto resolution order: Pipelab (a free boolean check, never a probe) → Webview → Node.js → Local
 storage.
