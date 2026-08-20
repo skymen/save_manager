@@ -1,7 +1,12 @@
 import { id, addonType } from "../../config.caw.js";
 import AddonTypeMap from "../../template/addonTypeMap.js";
 import { deepMerge, isPlainObject } from "./merge.js";
-import { joinPath, joinFromRoot, sanitizeSegment } from "./paths.js";
+import {
+  joinPath,
+  joinFromRoot,
+  sanitizeSegment,
+  findObjectClassByPluginId,
+} from "./paths.js";
 import { BACKENDS, resolveAuto } from "./backends/index.js";
 import registry from "./registry.js";
 
@@ -54,15 +59,17 @@ export default function (parentClass) {
         this._methodIndex = properties[1] | 0;
         this._jsonSid = properties[2];
         this._defaultDataPath = properties[3] || "";
-        this._extension = String(properties[4] ?? "sav").replace(/^\.+/, "");
-        this._folderIndex = properties[5] | 0;
-        this._subfolder = String(properties[6] ?? "");
-        this._customHandlerId = String(properties[7] ?? "");
+        this._saveName = String(properties[4] ?? "");
+        this._extension = String(properties[5] ?? "sav").replace(/^\.+/, "");
+        this._folderIndex = properties[6] | 0;
+        this._subfolder = String(properties[7] ?? "");
+        this._customHandlerId = String(properties[8] ?? "");
       } else {
         this._autoLoad = false;
         this._methodIndex = 0;
         this._jsonSid = -1;
         this._defaultDataPath = "";
+        this._saveName = "";
         this._extension = "sav";
         this._folderIndex = 0;
         this._subfolder = "";
@@ -86,13 +93,44 @@ export default function (parentClass) {
 
     async _onProjectStart() {
       await this._loadDefaults();
+      this._warnOnNameCollision();
       if (this._autoLoad) await this._doLoad();
+    }
+
+    // Unique object type names used to guarantee two instances could never share a
+    // file. Setting Save name removes that guarantee, so check for it once at
+    // startup. A warning only: two instances pointed at one file is almost always a
+    // mistake, but it is not this plugin's place to refuse to run.
+    _warnOnNameCollision() {
+      const oc = findObjectClassByPluginId(this.runtime, id);
+      if (!oc) return;
+
+      const mine = this._buildContext("");
+      for (const other of oc.getAllInstances()) {
+        if (other === this || typeof other._buildContext !== "function") continue;
+        const theirs = other._buildContext("");
+        if (
+          theirs.fileName === mine.fileName &&
+          theirs.subfolder === mine.subfolder &&
+          theirs.folder === mine.folder
+        ) {
+          console.warn(
+            `[Save Manager: ${this.objectType.name}] Another Save Manager ` +
+              `("${other.objectType.name}") resolves to the same save "${mine.fileName}" in the ` +
+              `same folder. They will overwrite each other. Give them different Save names.`
+          );
+          return;
+        }
+      }
     }
 
     // ---------------------------------------------------------------- naming
 
+    // Falls back to the object type name when Save name is blank. That default is
+    // convenient but invisible: renaming the object in the editor then changes the
+    // file name and hides existing saves, which is why Save name exists.
     _resolveName(slot) {
-      const base = sanitizeSegment(this.objectType.name);
+      const base = sanitizeSegment(this._saveName || this.objectType.name);
       const suffix = slot ? `_${sanitizeSegment(slot)}` : "";
       const ext = sanitizeSegment(this._extension);
       return ext ? `${base}${suffix}.${ext}` : `${base}${suffix}`;

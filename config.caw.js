@@ -14,7 +14,8 @@ export const version = _version;
 export const minConstructVersion = "r426";
 export const author = "skymen";
 export const website = "https://www.construct.net";
-export const documentation = "https://www.construct.net";
+export const documentation =
+  "https://www.construct.net/en/make-games/addons/1683/save-manager/documentation";
 export const description = "A plugin to manage JSON based save files";
 export const category = ADDON_CATEGORY.DATA_AND_STORAGE;
 
@@ -130,6 +131,15 @@ export const properties = [
     },
     name: "Default data",
     desc: "Optional project file holding the default save data. Loaded first, then the stored save is merged on top",
+  },
+  {
+    type: PROPERTY_TYPE.TEXT,
+    id: "saveName",
+    options: {
+      initialValue: "",
+    },
+    name: "Save name",
+    desc: "Name for the save, without the extension. Leave blank to use this object's name, but note that renaming the object then hides existing saves",
   },
   {
     type: PROPERTY_TYPE.TEXT,

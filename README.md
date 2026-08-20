@@ -1,27 +1,22 @@
 <img src="./examples/cover.png" width="150" /><br>
 # Save Manager
 <i>A plugin to manage JSON based save files</i> <br>
-### Version 1.3.0.0
+### Version 1.4.0.0
 
-[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/skymen/save_manager/releases/download/skymen_save_manager-1.3.0.0.c3addon/skymen_save_manager-1.3.0.0.c3addon)
+[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/skymen/save_manager/releases/download/skymen_save_manager-1.4.0.0.c3addon/skymen_save_manager-1.4.0.0.c3addon)
 <br>
 <sub> [See all releases](https://github.com/skymen/save_manager/releases) </sub> <br>
 
-#### What's New in 1.3.0.0
-- **Added:** - On load failed trigger, fired when a load fails after retries
-- **Added:** - LastErrorOperation expression: "load", "save", "delete" or "check"
-- **Added:** - Automatic backup of an unreadable or corrupt save before defaults are applied
-- **Added:** - Operations are serialised per instance, so projects no longer need their own save mutex
-- **Changed:** - BREAKING: "On error" is now "On any error" and must be re-picked in event sheets
-- **Changed:** - Node.js backend is fully async and writes atomically (temp file + rename)
-- **Changed:** - Pipelab writes atomically (temp file + move with overwrite)
-- **Fixed:** - A failed load could present as a fresh install, and the next save would overwrite the real one
-- **Fixed:** - A bad default data path was only surfaced much later, via New save
+#### What's New in 1.4.0.0
+- **Added:** - Save name property. Leave it blank to keep using the object's name, or set it so renaming the object no longer hides existing saves
+- **Added:** - Warning when two Save Managers resolve to the same save file
 
 <sub>[View full changelog](#changelog)</sub>
 
 ---
 <b><u>Author:</u></b> skymen <br>
+<b>[Addon Website](https://www.construct.net)</b>  <br>
+<b>[Documentation](https://www.construct.net/en/make-games/addons/1683/save-manager/documentation)</b>  <br>
 <sub>Made using [CAW](https://marketplace.visualstudio.com/items?itemName=skymen.caw) </sub><br>
 
 ## Table of Contents
@@ -59,6 +54,7 @@ npm run dev
 | Method | Where the save is stored. Auto picks the best available backend at runtime | combo |
 | JSON object | The JSON object this plugin loads into and saves from | object |
 | Default data | Optional project file holding the default save data. Loaded first, then the stored save is merged on top | projectfile |
+| Save name | Name for the save, without the extension. Leave blank to use this object's name, but note that renaming the object then hides existing saves | text |
 | Extension | File extension for the save. The file is named after this object type, e.g. PlayerSave.sav | text |
 | Folder | Which common folder file based backends write to. Ignored by local storage and custom | combo |
 | Subfolder | Subfolder inside the chosen folder. Leave blank to use the project name | text |
@@ -109,6 +105,10 @@ npm run dev
 
 ---
 ## Changelog
+
+**1.4.0.0**
+- **Added:** - Save name property. Leave it blank to keep using the object's name, or set it so renaming the object no longer hides existing saves
+- **Added:** - Warning when two Save Managers resolve to the same save file
 
 **1.3.0.0**
 - **Added:** - On load failed trigger, fired when a load fails after retries

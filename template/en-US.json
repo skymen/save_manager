@@ -6,7 +6,7 @@
       "skymen_save_manager": {
         "name": "Save Manager",
         "description": "A plugin to manage JSON based save files",
-        "help-url": "https://www.construct.net",
+        "help-url": "https://www.construct.net/en/make-games/addons/1683/save-manager/documentation",
         "aceCategories": {
           "save": "Save Manager"
         },
@@ -34,6 +34,10 @@
           "defaultData": {
             "name": "Default data",
             "desc": "Optional project file holding the default save data. Loaded first, then the stored save is merged on top"
+          },
+          "saveName": {
+            "name": "Save name",
+            "desc": "Name for the save, without the extension. Leave blank to use this object's name, but note that renaming the object then hides existing saves"
           },
           "extension": {
             "name": "Extension",
