@@ -121,6 +121,16 @@ export async function write(ctx, text) {
   });
 }
 
+// Copy runs on the native/FS-Access side rather than through readFile, so it can
+// still succeed when our own read failed. The write path is deliberately left
+// alone: createWritable() already commits via a swap file, so it is atomic, and
+// move() is flagged outside OPFS with inconsistent overwrite semantics.
+export async function copy(ctx, destCtx) {
+  const fs = getType(ctx);
+  const tag = requireTag(ctx);
+  await fs.copyFile(tag, ctx.relPath, destCtx.relPath);
+}
+
 export async function remove(ctx) {
   const fs = getType(ctx);
   const tag = requireTag(ctx);

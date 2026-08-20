@@ -2,9 +2,9 @@ export const config = {
   highlight: false,
   isDeprecated: false,
   isTrigger: true,
-  listName: "On error",
-  displayText: "On error",
-  description: "Triggered when a load, save, delete or check fails. Read LastError for details",
+  listName: "On check error",
+  displayText: "On check error",
+  description: "Triggered when Check if save exists fails",
   params: [],
 };
 

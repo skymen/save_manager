@@ -120,16 +120,34 @@
               }
             }
           },
+          "OnAnyError": {
+            "list-name": "On any error",
+            "display-text": "On any error",
+            "description": "Triggered when any load, save, delete or check fails. Read LastError for the message and LastErrorOperation for which operation it was",
+            "params": {}
+          },
+          "OnCheckError": {
+            "list-name": "On check error",
+            "display-text": "On check error",
+            "description": "Triggered when Check if save exists fails",
+            "params": {}
+          },
+          "OnDeleteError": {
+            "list-name": "On delete error",
+            "display-text": "On delete error",
+            "description": "Triggered when deleting the save fails",
+            "params": {}
+          },
           "OnDeleted": {
             "list-name": "On deleted",
             "display-text": "On deleted",
             "description": "Triggered after the stored save has been deleted",
             "params": {}
           },
-          "OnError": {
-            "list-name": "On error",
-            "display-text": "On error",
-            "description": "Triggered when a load, save, delete or check fails. Read LastError for details",
+          "OnLoadError": {
+            "list-name": "On load error",
+            "display-text": "On load error",
+            "description": "Triggered when a load fails. The default data is still applied so the game is playable, and the previous save has been backed up where the backend allows it",
             "params": {}
           },
           "OnLoaded": {
@@ -144,10 +162,22 @@
             "description": "Triggered after a new save has been started from the default data",
             "params": {}
           },
+          "OnNewSaveError": {
+            "list-name": "On new save error",
+            "display-text": "On new save error",
+            "description": "Triggered when starting a new save fails, which means the default data could not be read",
+            "params": {}
+          },
           "OnSaveChecked": {
             "list-name": "On save checked",
             "display-text": "On save checked",
             "description": "Triggered after Check if save exists finishes",
+            "params": {}
+          },
+          "OnSaveError": {
+            "list-name": "On save error",
+            "display-text": "On save error",
+            "description": "Triggered when a save fails. Nothing was written, so the stored save is unchanged",
             "params": {}
           },
           "OnSaved": {
@@ -166,6 +196,11 @@
           "LastError": {
             "translated-name": "LastError",
             "description": "The message from the most recent failure, or an empty string if the last operation succeeded",
+            "params": {}
+          },
+          "LastErrorOperation": {
+            "translated-name": "LastErrorOperation",
+            "description": "Which operation the last error came from: \"load\", \"save\", \"delete\" or \"check\". Empty if the last operation succeeded",
             "params": {}
           },
           "SaveName": {

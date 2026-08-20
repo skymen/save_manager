@@ -1,4 +1,4 @@
-import { findObjectClassByPluginId, joinFromRoot } from "../paths.js";
+import { findObjectClassByPluginId, joinFromRoot, appContainerFolder } from "../paths.js";
 
 export const id = "pipelab";
 
@@ -34,14 +34,25 @@ export function unavailableReason() {
   );
 }
 
+// Electron's `exe` is MyApp.app/Contents/MacOS/MyApp on macOS, so _exeFolder
+// points inside the bundle exactly like NW.js's execPath does. Normalise it the
+// same way so both backends agree on what App folder means.
+export function getFolderRoot(pl, folder) {
+  const raw = pl ? pl[FOLDER_FIELDS[folder]] : "";
+  if (!raw) return "";
+  return folder === "appfolder" ? appContainerFolder(raw) : raw;
+}
+
 function resolvePaths(ctx) {
   const pl = getInstance(ctx);
-  const root = pl ? pl[FOLDER_FIELDS[ctx.folder]] : "";
+  const root = getFolderRoot(pl, ctx.folder);
   if (!root) throw new Error(`Pipelab did not report a path for folder "${ctx.folder}"`);
+  const file = joinFromRoot(root, ctx.subfolder, ctx.fileName);
   return {
     pl,
     dir: joinFromRoot(root, ctx.subfolder),
-    file: joinFromRoot(root, ctx.subfolder, ctx.fileName),
+    file,
+    tmp: `${file}.tmp`,
   };
 }
 
@@ -56,12 +67,40 @@ export async function read(ctx) {
   return String(result);
 }
 
+// Atomic where possible: write a sibling temp file, then move it over the target.
+// _MoveFile takes an explicit overwrite flag, so replacing the destination is
+// defined behaviour rather than something we have to hope for. If the move fails
+// for any reason we fall back to writing in place, so a bad move can never break
+// saving outright.
 export async function write(ctx, text) {
-  const { pl, dir, file } = resolvePaths(ctx);
+  const { pl, dir, file, tmp } = resolvePaths(ctx);
   await pl._CreateFolder(dir, true);
+
+  await pl._WriteTextFile(tmp, text);
+  if (pl._WriteTextFileResult()) {
+    await pl._MoveFile(tmp, file, true);
+    if (pl._MoveFileResult()) return;
+    // Clean up so a stale temp file is not left next to the save.
+    try {
+      await pl._DeleteFile(tmp, false);
+    } catch (e) {
+      // Best effort only.
+    }
+  }
+
   await pl._WriteTextFile(file, text);
   if (!pl._WriteTextFileResult())
     throw new Error(pl._WriteTextFileError() || "Pipelab could not write the save file");
+}
+
+// Host-side copy over the Pipelab socket, so it does not route through our read
+// and can still succeed when reading failed.
+export async function copy(ctx, destCtx) {
+  const { pl, file } = resolvePaths(ctx);
+  const dest = resolvePaths(destCtx);
+  await pl._CopyFile(file, dest.file, true);
+  if (!pl._CopyFileResult())
+    throw new Error(pl._CopyFileError() || "Pipelab could not copy the save file");
 }
 
 export async function remove(ctx) {

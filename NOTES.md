@@ -47,3 +47,7 @@ Smaller
 15. NewSave is sync and calls \_getDefaults(), which throws before beforeprojectstart. Reachable from runOnStartup or an early script, where it errors rather than degrading.
 
 For what it's worth, the parts that are clearly deliberate — blocking on beforeprojectstart so load precedes the first layout, the beforeLoad hook existing because concurrent beforeprojectstart listeners would race, deepMerge replacing arrays wholesale, refusing fallback on an explicit method — are the load-bearing decisions and they're right. The gaps above are mostly about what happens when the write or the read doesn't go to plan.
+
+- webview path should be the full path like the other platforms
+- maybe add an action to open the file path on supported platforms
+- make categories and cleanup language and code

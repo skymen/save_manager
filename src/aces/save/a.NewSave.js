@@ -19,8 +19,9 @@ export default function () {
     this._isLoaded = true;
     this._saveExisted = false;
     this._lastError = "";
+    this._lastErrorOperation = "";
     this._trigger("OnNewSave");
   } catch (e) {
-    this._fail(e);
+    this._fail(e, "new");
   }
 }

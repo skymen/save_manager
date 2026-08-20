@@ -1,14 +1,22 @@
 <img src="./examples/cover.png" width="150" /><br>
 # Save Manager
 <i>A plugin to manage JSON based save files</i> <br>
-### Version 1.2.0.0
+### Version 1.3.0.0
 
-[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/skymen/save_manager/releases/download/skymen_save_manager-1.2.0.0.c3addon/skymen_save_manager-1.2.0.0.c3addon)
+[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/skymen/save_manager/releases/download/skymen_save_manager-1.3.0.0.c3addon/skymen_save_manager-1.3.0.0.c3addon)
 <br>
 <sub> [See all releases](https://github.com/skymen/save_manager/releases) </sub> <br>
 
-#### What's New in 1.2.0.0
-- **Changed:** Moved some code aroud
+#### What's New in 1.3.0.0
+- **Added:** - On load failed trigger, fired when a load fails after retries
+- **Added:** - LastErrorOperation expression: "load", "save", "delete" or "check"
+- **Added:** - Automatic backup of an unreadable or corrupt save before defaults are applied
+- **Added:** - Operations are serialised per instance, so projects no longer need their own save mutex
+- **Changed:** - BREAKING: "On error" is now "On any error" and must be re-picked in event sheets
+- **Changed:** - Node.js backend is fully async and writes atomically (temp file + rename)
+- **Changed:** - Pipelab writes atomically (temp file + move with overwrite)
+- **Fixed:** - A failed load could present as a fresh install, and the next save would overwrite the real one
+- **Fixed:** - A bad default data path was only surfaced much later, via New save
 
 <sub>[View full changelog](#changelog)</sub>
 
@@ -75,11 +83,16 @@ npm run dev
 | Has save data | True if the last load or check found an existing save. Conditions cannot do IO, so use Check if save exists first to refresh this |  |
 | Is loaded | True once data has been loaded into the JSON object at least once |  |
 | Is using backend | Check which backend was actually resolved, which is useful when Method is Auto | Backend *(combo)* <br> |
+| On any error | Triggered when any load, save, delete or check fails. Read LastError for the message and LastErrorOperation for which operation it was |  |
+| On check error | Triggered when Check if save exists fails |  |
+| On delete error | Triggered when deleting the save fails |  |
 | On deleted | Triggered after the stored save has been deleted |  |
-| On error | Triggered when a load, save, delete or check fails. Read LastError for details |  |
+| On load error | Triggered when a load fails. The default data is still applied so the game is playable, and the previous save has been backed up where the backend allows it |  |
 | On loaded | Triggered after save data has been loaded and merged into the JSON object |  |
 | On new save | Triggered after a new save has been started from the default data |  |
+| On new save error | Triggered when starting a new save fails, which means the default data could not be read |  |
 | On save checked | Triggered after Check if save exists finishes |  |
+| On save error | Triggered when a save fails. Nothing was written, so the stored save is unchanged |  |
 | On saved | Triggered after save data has been written successfully |  |
 
 
@@ -89,12 +102,24 @@ npm run dev
 | --- | --- | --- | --- |
 | Backend | The backend actually in use: localstorage, nodejs, webview, pipelab or custom. Empty until the first operation resolves one | string |  | 
 | LastError | The message from the most recent failure, or an empty string if the last operation succeeded | string |  | 
+| LastErrorOperation | Which operation the last error came from: "load", "save", "delete" or "check". Empty if the last operation succeeded | string |  | 
 | SaveName | The resolved save file name, which is this object type's name plus the extension. Also the local storage key | string |  | 
 | SavePath | The path the save is written to for file based backends. Empty for local storage and custom backends | string |  | 
 
 
 ---
 ## Changelog
+
+**1.3.0.0**
+- **Added:** - On load failed trigger, fired when a load fails after retries
+- **Added:** - LastErrorOperation expression: "load", "save", "delete" or "check"
+- **Added:** - Automatic backup of an unreadable or corrupt save before defaults are applied
+- **Added:** - Operations are serialised per instance, so projects no longer need their own save mutex
+- **Changed:** - BREAKING: "On error" is now "On any error" and must be re-picked in event sheets
+- **Changed:** - Node.js backend is fully async and writes atomically (temp file + rename)
+- **Changed:** - Pipelab writes atomically (temp file + move with overwrite)
+- **Fixed:** - A failed load could present as a fresh install, and the next save would overwrite the real one
+- **Fixed:** - A bad default data path was only surfaced much later, via New save
 
 **1.2.0.0**
 - **Changed:** Moved some code aroud

@@ -11,7 +11,7 @@ export const config = {
 export const expose = true;
 
 export default function () {
-  return this._run("OnDeleted", async (ctx, backend) => {
+  return this._run("delete", "OnDeleted", async (ctx, backend) => {
     await backend.remove(ctx);
     this._saveExisted = false;
   });

@@ -32,3 +32,17 @@ export function findObjectClassByPluginId(runtime, pluginId) {
   }
   return null;
 }
+
+// macOS puts the executable inside MyApp.app/Contents/MacOS, so every framework's
+// idea of "where the app is" lands inside the package: NW.js reports a path deep
+// in nwjs Framework.framework, and Electron's `exe` (Pipelab's _exeFolder) reports
+// Contents/MacOS. Strip back to the folder CONTAINING the outermost .app so the
+// App folder option means the same thing on every platform. On Windows and Linux
+// there is no .app segment and the path is returned unchanged.
+export function appContainerFolder(p) {
+  const raw = String(p ?? "");
+  // Normalise only to run the test; a path with no .app segment is returned
+  // verbatim so Windows separators are left alone.
+  const m = /^(.*?)\/[^/]+\.app(?:\/|$)/.exec(raw.replace(/\\/g, "/"));
+  return m ? m[1] : raw;
+}
