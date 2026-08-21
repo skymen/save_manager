@@ -35,6 +35,54 @@ const ALL_TAGS = [
   "<pictures>", "<profile>", "<saved-games>", "<screenshots>", "<videos>",
 ];
 
+// The File System plugin exposes no path API whatsoever: GetFullPath exists only
+// as an internal symbol inside scirra-filesystem.ext.*, and the File System Access
+// API deliberately never reveals real paths. The folder *shape* is knowable from
+// platformInfo.os though, so build a path using the platform's own environment
+// token for the part we cannot know - the user's home directory. These paste
+// straight into Explorer or Finder's "Go to Folder" and resolve.
+const FOLDER_TOKENS = {
+  windows: {
+    "<roaming-app-data>": "%APPDATA%",
+    "<local-app-data>": "%LOCALAPPDATA%",
+    "<profile>": "%USERPROFILE%",
+  },
+  macos: {
+    "<local-app-data>": "~/Library/Application Support",
+    "<profile>": "~",
+  },
+  linux: {
+    "<local-app-data>": "~/.local/share",
+    "<profile>": "~",
+  },
+};
+
+// The absolute path is genuinely unobtainable here, so this is the closest honest
+// answer. <app> has no token because the install directory is not derivable, and
+// falls back to the picker tag itself.
+export function fullPath(ctx) {
+  const tag = pickerTag(ctx);
+  if (tag === null) return "";
+
+  const os = (ctx.runtime.platformInfo && ctx.runtime.platformInfo.os) || "";
+  const root = (FOLDER_TOKENS[os] || {})[tag] || tag;
+  const sep = os === "windows" ? "\\" : "/";
+
+  return [root, ctx.subfolder, ctx.fileName]
+    .filter((part) => part !== "" && part !== null && part !== undefined)
+    .join(sep);
+}
+
+// Opens the save's folder in the OS file manager. Only available on desktop
+// wrapper exports; in a browser there is nothing to open.
+export async function reveal(ctx) {
+  const fs = getType(ctx);
+  const tag = requireTag(ctx);
+  if (!fs.desktopFeaturesSupported)
+    throw new Error("Revealing the save location is only supported on desktop exports.");
+  await fs.shellOpen(tag, ctx.subfolder);
+}
+
 // The File System plugin exposes its API on the object type, not an instance.
 export function getType(ctx) {
   return findObjectClassByPluginId(ctx.runtime, PLUGIN_ID);

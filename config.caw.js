@@ -42,6 +42,8 @@ export const files = {
 // categories that are not filled will use the folder name
 export const aceCategories = {
   save: "Save Manager",
+  errors: "Errors",
+  "file-system": "File system",
 };
 
 export const info = {

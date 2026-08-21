@@ -1,15 +1,20 @@
 <img src="./examples/cover.png" width="150" /><br>
 # Save Manager
 <i>A plugin to manage JSON based save files</i> <br>
-### Version 1.4.0.0
+### Version 1.5.0.0
 
-[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/skymen/save_manager/releases/download/skymen_save_manager-1.4.0.0.c3addon/skymen_save_manager-1.4.0.0.c3addon)
+[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/skymen/save_manager/releases/download/skymen_save_manager-1.5.0.0.c3addon/skymen_save_manager-1.5.0.0.c3addon)
 <br>
 <sub> [See all releases](https://github.com/skymen/save_manager/releases) </sub> <br>
 
-#### What's New in 1.4.0.0
-- **Added:** - Save name property. Leave it blank to keep using the object's name, or set it so renaming the object no longer hides existing saves
-- **Added:** - Warning when two Save Managers resolve to the same save file
+#### What's New in 1.5.0.0
+- **Added:** - Reveal save location action, plus an optional reveal() method for custom handlers
+- **Added:** - SaveRelativePath expression: the path from the selected folder down
+- **Added:** - On reveal error trigger
+- **Changed:** - ACEs are split into Save Manager, Errors and File system categories
+- **Changed:** - SavePath now returns the full path on Node.js and Pipelab. On Webview it returns a platform path using an environment token, since the real path cannot be read there
+- **Changed:** - With Auto load off, the default data is now loaded into the JSON object at startup instead of leaving it untouched
+- **Fixed:** - SavePath was missing the root folder on the Node.js backend
 
 <sub>[View full changelog](#changelog)</sub>
 
@@ -45,6 +50,7 @@ npm run dev
 ## Examples Files
 | Description | Download |
 | --- | --- |
+| example | [<img src="https://placehold.co/120x30/4493f8/FFF?text=Download&font=montserrat" width="120"/>](https://github.com/skymen/save_manager/raw/refs/heads/main/examples/example.c3p) |
 
 ---
 ## Properties
@@ -65,6 +71,7 @@ npm run dev
 ## Actions
 | Action | Description | Params
 | --- | --- | --- |
+| Reveal save location | Open the folder containing the save in the operating system's file manager. Only works on backends that store real files |  |
 | Check if save exists | Ask the backend whether a save exists, then read the result with the Has save data condition |  |
 | Delete save | Remove the stored save from the selected backend. The JSON object is left as is |  |
 | Load | Load the default data, then merge the stored save on top of it, into the JSON object |  |
@@ -76,19 +83,20 @@ npm run dev
 ## Conditions
 | Condition | Description | Params
 | --- | --- | --- |
-| Has save data | True if the last load or check found an existing save. Conditions cannot do IO, so use Check if save exists first to refresh this |  |
-| Is loaded | True once data has been loaded into the JSON object at least once |  |
-| Is using backend | Check which backend was actually resolved, which is useful when Method is Auto | Backend *(combo)* <br> |
 | On any error | Triggered when any load, save, delete or check fails. Read LastError for the message and LastErrorOperation for which operation it was |  |
 | On check error | Triggered when Check if save exists fails |  |
 | On delete error | Triggered when deleting the save fails |  |
-| On deleted | Triggered after the stored save has been deleted |  |
 | On load error | Triggered when a load fails. The default data is still applied so the game is playable, and the previous save has been backed up where the backend allows it |  |
+| On new save error | Triggered when starting a new save fails, which means the default data could not be read |  |
+| On reveal error | Triggered when revealing the save location fails, which usually means the backend has no folder to open |  |
+| On save error | Triggered when a save fails. Nothing was written, so the stored save is unchanged |  |
+| Is using backend | Check which backend was actually resolved, which is useful when Method is Auto | Backend *(combo)* <br> |
+| Has save data | True if the last load or check found an existing save. Conditions cannot do IO, so use Check if save exists first to refresh this |  |
+| Is loaded | True once data has been loaded into the JSON object at least once |  |
+| On deleted | Triggered after the stored save has been deleted |  |
 | On loaded | Triggered after save data has been loaded and merged into the JSON object |  |
 | On new save | Triggered after a new save has been started from the default data |  |
-| On new save error | Triggered when starting a new save fails, which means the default data could not be read |  |
 | On save checked | Triggered after Check if save exists finishes |  |
-| On save error | Triggered when a save fails. Nothing was written, so the stored save is unchanged |  |
 | On saved | Triggered after save data has been written successfully |  |
 
 
@@ -96,15 +104,25 @@ npm run dev
 ## Expressions
 | Expression | Description | Return Type | Params
 | --- | --- | --- | --- |
-| Backend | The backend actually in use: localstorage, nodejs, webview, pipelab or custom. Empty until the first operation resolves one | string |  | 
 | LastError | The message from the most recent failure, or an empty string if the last operation succeeded | string |  | 
 | LastErrorOperation | Which operation the last error came from: "load", "save", "delete" or "check". Empty if the last operation succeeded | string |  | 
+| Backend | The backend actually in use: localstorage, nodejs, webview, pipelab or custom. Empty until the first operation resolves one | string |  | 
 | SaveName | The resolved save file name, which is this object type's name plus the extension. Also the local storage key | string |  | 
 | SavePath | The path the save is written to for file based backends. Empty for local storage and custom backends | string |  | 
+| SaveRelativePath | The save's path from the selected folder down, e.g. MyGame/PlayerSave.sav. Pass this to the File System plugin along with a picker tag | string |  | 
 
 
 ---
 ## Changelog
+
+**1.5.0.0**
+- **Added:** - Reveal save location action, plus an optional reveal() method for custom handlers
+- **Added:** - SaveRelativePath expression: the path from the selected folder down
+- **Added:** - On reveal error trigger
+- **Changed:** - ACEs are split into Save Manager, Errors and File system categories
+- **Changed:** - SavePath now returns the full path on Node.js and Pipelab. On Webview it returns a platform path using an environment token, since the real path cannot be read there
+- **Changed:** - With Auto load off, the default data is now loaded into the JSON object at startup instead of leaving it untouched
+- **Fixed:** - SavePath was missing the root folder on the Node.js backend
 
 **1.4.0.0**
 - **Added:** - Save name property. Leave it blank to keep using the object's name, or set it so renaming the object no longer hides existing saves

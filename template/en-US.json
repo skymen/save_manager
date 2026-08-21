@@ -8,7 +8,9 @@
         "description": "A plugin to manage JSON based save files",
         "help-url": "https://www.construct.net/en/make-games/addons/1683/save-manager/documentation",
         "aceCategories": {
-          "save": "Save Manager"
+          "file-system": "File system",
+          "save": "Save Manager",
+          "errors": "Errors"
         },
         "properties": {
           "autoLoad": {
@@ -62,6 +64,12 @@
           }
         },
         "actions": {
+          "RevealSave": {
+            "list-name": "Reveal save location",
+            "display-text": "Reveal save location",
+            "description": "Open the folder containing the save in the operating system's file manager. Only works on backends that store real files",
+            "params": {}
+          },
           "CheckSaveExists": {
             "list-name": "Check if save exists",
             "display-text": "Check if save data exists",
@@ -94,16 +102,46 @@
           }
         },
         "conditions": {
-          "HasSaveData": {
-            "list-name": "Has save data",
-            "display-text": "Has save data",
-            "description": "True if the last load or check found an existing save. Conditions cannot do IO, so use Check if save exists first to refresh this",
+          "OnAnyError": {
+            "list-name": "On any error",
+            "display-text": "On any error",
+            "description": "Triggered when any load, save, delete or check fails. Read LastError for the message and LastErrorOperation for which operation it was",
             "params": {}
           },
-          "IsLoaded": {
-            "list-name": "Is loaded",
-            "display-text": "Is loaded",
-            "description": "True once data has been loaded into the JSON object at least once",
+          "OnCheckError": {
+            "list-name": "On check error",
+            "display-text": "On check error",
+            "description": "Triggered when Check if save exists fails",
+            "params": {}
+          },
+          "OnDeleteError": {
+            "list-name": "On delete error",
+            "display-text": "On delete error",
+            "description": "Triggered when deleting the save fails",
+            "params": {}
+          },
+          "OnLoadError": {
+            "list-name": "On load error",
+            "display-text": "On load error",
+            "description": "Triggered when a load fails. The default data is still applied so the game is playable, and the previous save has been backed up where the backend allows it",
+            "params": {}
+          },
+          "OnNewSaveError": {
+            "list-name": "On new save error",
+            "display-text": "On new save error",
+            "description": "Triggered when starting a new save fails, which means the default data could not be read",
+            "params": {}
+          },
+          "OnRevealError": {
+            "list-name": "On reveal error",
+            "display-text": "On reveal error",
+            "description": "Triggered when revealing the save location fails, which usually means the backend has no folder to open",
+            "params": {}
+          },
+          "OnSaveError": {
+            "list-name": "On save error",
+            "display-text": "On save error",
+            "description": "Triggered when a save fails. Nothing was written, so the stored save is unchanged",
             "params": {}
           },
           "IsUsingBackend": {
@@ -124,34 +162,22 @@
               }
             }
           },
-          "OnAnyError": {
-            "list-name": "On any error",
-            "display-text": "On any error",
-            "description": "Triggered when any load, save, delete or check fails. Read LastError for the message and LastErrorOperation for which operation it was",
+          "HasSaveData": {
+            "list-name": "Has save data",
+            "display-text": "Has save data",
+            "description": "True if the last load or check found an existing save. Conditions cannot do IO, so use Check if save exists first to refresh this",
             "params": {}
           },
-          "OnCheckError": {
-            "list-name": "On check error",
-            "display-text": "On check error",
-            "description": "Triggered when Check if save exists fails",
-            "params": {}
-          },
-          "OnDeleteError": {
-            "list-name": "On delete error",
-            "display-text": "On delete error",
-            "description": "Triggered when deleting the save fails",
+          "IsLoaded": {
+            "list-name": "Is loaded",
+            "display-text": "Is loaded",
+            "description": "True once data has been loaded into the JSON object at least once",
             "params": {}
           },
           "OnDeleted": {
             "list-name": "On deleted",
             "display-text": "On deleted",
             "description": "Triggered after the stored save has been deleted",
-            "params": {}
-          },
-          "OnLoadError": {
-            "list-name": "On load error",
-            "display-text": "On load error",
-            "description": "Triggered when a load fails. The default data is still applied so the game is playable, and the previous save has been backed up where the backend allows it",
             "params": {}
           },
           "OnLoaded": {
@@ -166,22 +192,10 @@
             "description": "Triggered after a new save has been started from the default data",
             "params": {}
           },
-          "OnNewSaveError": {
-            "list-name": "On new save error",
-            "display-text": "On new save error",
-            "description": "Triggered when starting a new save fails, which means the default data could not be read",
-            "params": {}
-          },
           "OnSaveChecked": {
             "list-name": "On save checked",
             "display-text": "On save checked",
             "description": "Triggered after Check if save exists finishes",
-            "params": {}
-          },
-          "OnSaveError": {
-            "list-name": "On save error",
-            "display-text": "On save error",
-            "description": "Triggered when a save fails. Nothing was written, so the stored save is unchanged",
             "params": {}
           },
           "OnSaved": {
@@ -192,11 +206,6 @@
           }
         },
         "expressions": {
-          "Backend": {
-            "translated-name": "Backend",
-            "description": "The backend actually in use: localstorage, nodejs, webview, pipelab or custom. Empty until the first operation resolves one",
-            "params": {}
-          },
           "LastError": {
             "translated-name": "LastError",
             "description": "The message from the most recent failure, or an empty string if the last operation succeeded",
@@ -207,6 +216,11 @@
             "description": "Which operation the last error came from: \"load\", \"save\", \"delete\" or \"check\". Empty if the last operation succeeded",
             "params": {}
           },
+          "Backend": {
+            "translated-name": "Backend",
+            "description": "The backend actually in use: localstorage, nodejs, webview, pipelab or custom. Empty until the first operation resolves one",
+            "params": {}
+          },
           "SaveName": {
             "translated-name": "SaveName",
             "description": "The resolved save file name, which is this object type's name plus the extension. Also the local storage key",
@@ -215,6 +229,11 @@
           "SavePath": {
             "translated-name": "SavePath",
             "description": "The path the save is written to for file based backends. Empty for local storage and custom backends",
+            "params": {}
+          },
+          "SaveRelativePath": {
+            "translated-name": "SaveRelativePath",
+            "description": "The save's path from the selected folder down, e.g. MyGame/PlayerSave.sav. Pass this to the File System plugin along with a picker tag",
             "params": {}
           }
         }

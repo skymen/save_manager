@@ -56,6 +56,19 @@ function resolvePaths(ctx) {
   };
 }
 
+export function fullPath(ctx) {
+  const { file } = resolvePaths(ctx);
+  return file;
+}
+
+// Opening the folder rather than the file, since a .sav has no default app.
+export async function reveal(ctx) {
+  const { pl, dir } = resolvePaths(ctx);
+  await pl._ShellOpen(dir);
+  if (!pl._ShellOpenResult())
+    throw new Error(pl._ShellOpenError() || "Pipelab could not open the save folder");
+}
+
 export async function read(ctx) {
   const { pl, file } = resolvePaths(ctx);
   await pl._ReadTextFile(file);

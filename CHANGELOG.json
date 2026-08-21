@@ -38,5 +38,10 @@
     "added": "- Save name property. Leave it blank to keep using the object's name, or set it so renaming the object no longer hides existing saves\n- Warning when two Save Managers resolve to the same save file",
     "changed": "",
     "fixed": ""
+  },
+  "1.5.0.0": {
+    "added": "- Reveal save location action, plus an optional reveal() method for custom handlers\n- SaveRelativePath expression: the path from the selected folder down\n- On reveal error trigger",
+    "changed": "- ACEs are split into Save Manager, Errors and File system categories\n- SavePath now returns the full path on Node.js and Pipelab. On Webview it returns a platform path using an environment token, since the real path cannot be read there\n- With Auto load off, the default data is now loaded into the JSON object at startup instead of leaving it untouched",
+    "fixed": "- SavePath was missing the root folder on the Node.js backend"
   }
 }

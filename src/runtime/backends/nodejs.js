@@ -88,6 +88,22 @@ function resolvePaths(ctx) {
 // Read straight away and treat ENOENT as "no save", rather than testing for
 // existence first: one syscall instead of two, and no window between the check
 // and the read in which the file could disappear.
+// The absolute path on disk, for display or logging.
+export function fullPath(ctx) {
+  const { file } = resolvePaths(ctx);
+  return file;
+}
+
+// showItemInFolder opens the containing folder and highlights the file, which is
+// what you want for a save: a .sav has no useful default application.
+export async function reveal(ctx) {
+  const shell = globalThis.nw && globalThis.nw.Shell;
+  if (!shell || typeof shell.showItemInFolder !== "function")
+    throw new Error("nw.Shell is unavailable, so the save location cannot be revealed");
+  const { file } = resolvePaths(ctx);
+  shell.showItemInFolder(file);
+}
+
 export async function read(ctx) {
   const { fsp, file } = resolvePaths(ctx);
   try {

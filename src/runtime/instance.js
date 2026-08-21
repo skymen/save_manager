@@ -3,7 +3,6 @@ import AddonTypeMap from "../../template/addonTypeMap.js";
 import { deepMerge, isPlainObject } from "./merge.js";
 import {
   joinPath,
-  joinFromRoot,
   sanitizeSegment,
   findObjectClassByPluginId,
 } from "./paths.js";
@@ -29,6 +28,7 @@ const ERROR_TRIGGERS = {
   delete: "OnDeleteError",
   check: "OnCheckError",
   new: "OnNewSaveError",
+  reveal: "OnRevealError",
 };
 
 export default function (parentClass) {
@@ -94,7 +94,19 @@ export default function (parentClass) {
     async _onProjectStart() {
       await this._loadDefaults();
       this._warnOnNameCollision();
-      if (this._autoLoad) await this._doLoad();
+
+      if (this._autoLoad) {
+        await this._doLoad();
+      } else {
+        // Without this the JSON object keeps whatever was typed into it in the
+        // editor, which is easy to mistake for loaded data. Applying the defaults
+        // gives a known starting state. _isLoaded stays false: no save was read.
+        try {
+          this._applyToJson(this._defaultsOrEmpty());
+        } catch (e) {
+          this._fail(e, "load");
+        }
+      }
     }
 
     // Unique object type names used to guarantee two instances could never share a
@@ -308,7 +320,8 @@ export default function (parentClass) {
         await fn.call(this, ctx, backend);
         this._lastError = "";
         this._lastErrorOperation = "";
-        this._trigger(triggerName);
+        // reveal has no success trigger; there is nothing meaningful to report.
+        if (triggerName) this._trigger(triggerName);
       } catch (e) {
         this._fail(e, operation);
       }
@@ -440,24 +453,34 @@ export default function (parentClass) {
 
     // ----------------------------------------------------------- expressions
 
-    _getSavePath(slot = "") {
-      const ctx = this._buildContext(slot);
+    // Which backend to describe, without resolving or throwing: expressions must
+    // never fail. Empty until Auto has actually picked one.
+    _backendForInfo() {
       const method = METHODS[this._methodIndex] || "auto";
-      const backendId = this._backend || (method === "auto" ? "" : method);
+      const resolved = this._backend || (method === "auto" ? "" : method);
+      return resolved ? BACKENDS[resolved] || null : null;
+    }
 
+    _getSavePath(slot = "") {
       try {
-        if (backendId === "pipelab") {
-          const pl = BACKENDS.pipelab.getInstance(ctx);
-          const root = BACKENDS.pipelab.getFolderRoot(pl, ctx.folder);
-          return root ? joinFromRoot(root, ctx.subfolder, ctx.fileName) : "";
-        }
-        if (backendId === "nodejs")
-          return joinPath(ctx.subfolder, ctx.fileName);
-        if (backendId === "webview") return ctx.relPath;
+        const ctx = this._buildContext(slot);
+        const backend = this._backendForInfo();
+        if (!backend || typeof backend.fullPath !== "function") return "";
+        return backend.fullPath(ctx) || "";
       } catch (e) {
         return "";
       }
-      return "";
+    }
+
+    // The path from the selected folder down, which is what the File System plugin
+    // wants alongside a picker tag. It is the only usable path on Webview, where no
+    // absolute path exists.
+    _getSaveRelativePath(slot = "") {
+      try {
+        return this._buildContext(slot).relPath;
+      } catch (e) {
+        return "";
+      }
     }
 
     // ---------------------------------------------------------------- events

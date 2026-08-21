@@ -42,6 +42,15 @@ export async function remove(ctx) {
   await h.delete(ctx.fileName);
 }
 
+// Optional. A local handler can open a folder, a cloud one can open a URL - what
+// "the save's location" means is the handler's decision.
+export async function reveal(ctx) {
+  const h = handler(ctx);
+  if (typeof h.reveal !== "function")
+    throw new Error(`Custom handler "${ctx.handlerId}" does not implement reveal()`);
+  await h.reveal(ctx.fileName);
+}
+
 export async function exists(ctx) {
   const h = handler(ctx);
   if (typeof h.exists === "function") return !!(await h.exists(ctx.fileName));
