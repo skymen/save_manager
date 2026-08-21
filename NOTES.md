@@ -2,5 +2,5 @@
 - Implement save versionning
 - webview path should be the full path like the other platforms
 - maybe add an action to open the file path on supported platforms
-- make categories and cleanup language and code
+- make categories
 - what happens with JSON object if addon loads with no autoload? Does it do nothing or start a new save by default?
