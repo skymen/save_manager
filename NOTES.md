@@ -1,6 +1,6 @@
 - Implement slots
 - Implement save versionning
-- maybe add a property to specify a specific file name that fallsback on object type name, like for folder
 - webview path should be the full path like the other platforms
 - maybe add an action to open the file path on supported platforms
 - make categories and cleanup language and code
+- what happens with JSON object if addon loads with no autoload? Does it do nothing or start a new save by default?
